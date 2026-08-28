@@ -1,6 +1,4 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
-
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
@@ -13,15 +11,16 @@ class SURVIVAL_ARCADE_API ABaseItem : public AActor, public IItemInterface
 	GENERATED_BODY()
 	
 public:	
-	// Sets default values for this actor's properties
 	ABaseItem();
 
 protected:
 	virtual void OnItemOverlap(AActor* OverlapActor) override;
 	virtual void OnItemEndOverlap(AActor* OverlapActor)override;
-	virtual void ActivateItem(AActor User) override;
+	virtual void ActivateItem(AActor* Activator) override;
 	virtual FName GetItemType() const override;
 	//인터페이스에 있던 것들.
+
+	virtual void DestroyItem();
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
 	FName ItemType;
