@@ -14,7 +14,7 @@ void ABaseItem::OnItemEndOverlap(AActor* OverlapActor)
 {
 
 }
-void ABaseItem::ActivateItem(AActor User) 
+void ABaseItem::ActivateItem(AActor* Activator)
 {
 
 }

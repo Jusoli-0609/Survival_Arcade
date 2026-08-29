@@ -22,7 +22,7 @@ public:
 	virtual void OnItemEndOverlap(AActor* OverlapActor) = 0;
 	//확장성을 생각했을 때 클래스보단 AActor를 쓰는 게 맞다.
 	//꼭 캐릭터만 진입하는 게 아니기 때문이다. 
-	virtual void ActivateItem(AActor User) = 0;
+	virtual void ActivateItem(AActor* Activator) = 0;
 	//오버랩 되면 실제 호출될 함수
 	virtual FName GetItemType() const = 0;
 	//아이템 유형 반환
