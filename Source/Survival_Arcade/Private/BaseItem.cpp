@@ -13,6 +13,7 @@ ABaseItem::ABaseItem()
 	// 충돌 컴포넌트 생성 및 설정
     Collision->SetCollisionProfileName(TEXT("OverlapAllDynamic"));
     // 겹침만 감지하는 프로파일 설정
+	Collision->SetupAttachment(Scene);
 
     StaticMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("StaticMesh"));
     // 스태틱 메시 컴포넌트 생성 및 설정
