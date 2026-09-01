@@ -15,8 +15,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
 	float ExplosionDelay;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
-	float ExplosionRadius;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
 	float ExplosionDamage;
 
 	virtual void ActivateItem(AActor* Activator) override;
