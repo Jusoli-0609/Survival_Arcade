@@ -18,6 +18,7 @@ void ACoinItem::ActivateItem(AActor* Activator)
 			if (AJupiterGameState* GameState = World->GetGameState<AJupiterGameState>())
 			{
 				GameState->AddScore(PointValue);
+				GameState->OnCoinCollected();
 			}
 			DestroyItem();
 			// 부모 클래스 (BaseItem)에 정의된 아이템 파괴 함수 호출
