@@ -18,8 +18,23 @@ class SURVIVAL_ARCADE_API IItemInterface
 
 public:
 	//플레이어가 진입했을 때, 이탈했을 때 2가지의 구현이 필요하다.
-	virtual void OnItemOverlap(AActor* OverlapActor) = 0;
-	virtual void OnItemEndOverlap(AActor* OverlapActor) = 0;
+	virtual void OnItemOverlap(
+		UPrimitiveComponent* OverlappedComp,
+		// 오버랩이 발생한 자기 자신(스피어 컴포넌트)
+		AActor* OtherActor,
+		//스피어에 부딪힌 상대 액터	(캐릭터)
+		UPrimitiveComponent* OtherComp,
+		//OtherActor에 붙어있던, 충돌을 야기한  컴포넌트(캡슐 컴포넌트)
+		int32 OtherBodyIndex,
+		bool bFromSweep,
+		const FHitResult& SweepResult) = 0;
+		// 하위 세개는 물리 관련 변수라 나중에 다룸
+	
+	virtual void OnItemEndOverlap(
+		UPrimitiveComponent* OverlappedComp,
+		AActor* OtherActor,
+		UPrimitiveComponent* OtherComp,
+		int32 OtherBodyIndex) = 0;
 	//확장성을 생각했을 때 클래스보단 AActor를 쓰는 게 맞다.
 	//꼭 캐릭터만 진입하는 게 아니기 때문이다. 
 	virtual void ActivateItem(AActor* Activator) = 0;

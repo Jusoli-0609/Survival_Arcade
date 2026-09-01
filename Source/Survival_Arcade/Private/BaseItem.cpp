@@ -18,14 +18,35 @@ ABaseItem::ABaseItem()
     StaticMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("StaticMesh"));
     // 스태틱 메시 컴포넌트 생성 및 설정
     StaticMesh->SetupAttachment(Collision);
-		// 메시가 불필요하게 충돌을 막지 않도록 하기 위해, 별도로 NoCollision 등으로 설정할 수 있음.
+	// 메시가 불필요하게 충돌을 막지 않도록 하기 위해, 별도로 NoCollision 등으로 설정할 수 있음.
+
+	Collision->OnComponentBeginOverlap.AddDynamic(this, &ABaseItem::OnItemOverlap);
+	Collision->OnComponentEndOverlap.AddDynamic(this, &ABaseItem::OnItemEndOverlap);
+	// 이 객체의 베이스 아이템에 오버랩 이벤트를 바인딩
+	// 바인딩을 왜 해야하는가?
 }
 
-void ABaseItem::OnItemOverlap(AActor* OverlapActor)
+void ABaseItem::OnItemOverlap(
+	UPrimitiveComponent* OverlappedComp,
+	AActor* OtherActor,
+	UPrimitiveComponent* OtherComp,
+	int32 OtherBodyIndex,
+	bool bFromSweep,
+	const FHitResult& SweepResult)
 {
-
+	// OtherActor가 플레이어인지 확인 ("Player" 태그 활용)
+	if (OtherActor && OtherActor->ActorHasTag("Player"))
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Green, FString::Printf(TEXT("Overlap!!!")));
+		// 아이템 사용 (획득) 로직 호출
+		ActivateItem(OtherActor);
+	}
 }
-void ABaseItem::OnItemEndOverlap(AActor* OverlapActor)
+void ABaseItem::OnItemEndOverlap(
+	UPrimitiveComponent* OverlappedComp,
+	AActor* OtherActor,
+	UPrimitiveComponent* OtherComp,
+	int32 OtherBodyIndex)
 {
 
 }
