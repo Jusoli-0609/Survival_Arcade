@@ -17,7 +17,7 @@ void AHealingItem::ActivateItem(AActor* Activator)
             -1,
             2.0f,
             FColor::Green,
-            FString::Printf(TEXT("Player gained %.0f HP!"), HealAmount));
+            FString::Printf(TEXT("Player gained %d HP!"), HealAmount));
         // 회복 디버그 메시지
 
         DestroyItem();

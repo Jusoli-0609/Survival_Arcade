@@ -12,7 +12,7 @@ class SURVIVAL_ARCADE_API AHealingItem : public ABaseItem
 public:
 	AHealingItem();
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
-	float HealAmount;
+	int32 HealAmount;
 
 	virtual void ActivateItem(AActor* Activator) override;
 };
