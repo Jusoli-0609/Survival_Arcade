@@ -1,11 +1,13 @@
 ﻿#include "JupiterGameMode.h"
 #include "JupiterCharacter.h"
 #include "JupiterPlayerController.h"
+#include "JupiterGameState.h"
 
 AJupiterGameMode::AJupiterGameMode()
 {
 	DefaultPawnClass = AJupiterCharacter::StaticClass();
 	PlayerControllerClass = AJupiterPlayerController::StaticClass();
+	GameStateClass = AJupiterGameState::StaticClass();
 }
 
 //StaticClass()는 클래스 이름을 통해서 호출을 해줌...?

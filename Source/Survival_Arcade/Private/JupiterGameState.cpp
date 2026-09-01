@@ -1,5 +1,17 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿#include "JupiterGameState.h"
 
+AJupiterGameState::AJupiterGameState()
+{
+    Score = 0;
+}
 
-#include "JupiterGameState.h"
+int32 AJupiterGameState::GetScore() const
+{
+    return Score;
+}
 
+void AJupiterGameState::AddScore(int32 Amount)
+{
+    Score += Amount;
+	UE_LOG(LogTemp, Warning, TEXT("Score: %d"), Score);
+}
