@@ -19,6 +19,6 @@ public:
 	//클래스 이름
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	float Spawnchance;
-	//라리템 확률
+	float SpawnChance;
+	//아이템 확률
 };
