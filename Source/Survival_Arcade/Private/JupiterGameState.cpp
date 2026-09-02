@@ -6,7 +6,6 @@
 
 AJupiterGameState::AJupiterGameState()
 {
-	Score = 0;
 	SpawnedCoinCount = 0;
 	CollectedCoinCount = 0;
 	LevelDuration = 30.0f; // 한 레벨당 30초
@@ -24,7 +23,13 @@ void AJupiterGameState::BeginPlay()
 
 int32 AJupiterGameState::GetScore() const
 {
-	return Score;
+	if (const UJupiterGameInstance* JupiterGameInstance =
+		Cast<UJupiterGameInstance>(GetGameInstance()))
+	{
+		return JupiterGameInstance->TotalScore;
+	}
+
+	return 0;
 }
 
 void AJupiterGameState::AddScore(int32 Amount)
@@ -123,7 +128,6 @@ void AJupiterGameState::EndLevel()
 		UJupiterGameInstance* JupiterGameInstance = Cast<UJupiterGameInstance>(GameInstance);
 		if (JupiterGameInstance)
 		{
-			AddScore(Score); // 레벨 종료 시, 수집한 코인 수만큼 점수 추가
 			JupiterGameInstance->CurrentLevelIndex = CurrentLevelIndex;
 		}
 	}
