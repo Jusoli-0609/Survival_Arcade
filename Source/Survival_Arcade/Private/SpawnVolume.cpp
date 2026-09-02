@@ -24,6 +24,7 @@ AActor* ASpawnVolume::SpawnRandomItem()
             return SpawnItem(ActualClass);
         }
     }
+    return nullptr;
 }
 
 FVector ASpawnVolume::GetRandomPointInVolume() const
@@ -59,6 +60,11 @@ FItemSpawnRow* ASpawnVolume::GetRandomItem() const
 		    }
 		}
 
+        if (TotalChance <= 0.0f)
+        {
+            return nullptr;
+        }
+
     // 3) 0 ~ TotalChance 사이 랜덤 값
     const float RandValue = FMath::FRandRange(0.0f, TotalChance);
     float AccumulateChance = 0.0f;
@@ -66,6 +72,7 @@ FItemSpawnRow* ASpawnVolume::GetRandomItem() const
     // 4) 누적 확률로 아이템 선택
     for (FItemSpawnRow* Row : AllRows)
     {
+        if (!Row) continue;
         AccumulateChance += Row->SpawnChance;
         if (RandValue <= AccumulateChance)
         {
@@ -86,4 +93,5 @@ AActor* ASpawnVolume::SpawnItem(TSubclassOf<AActor> ItemClass)
         GetRandomPointInVolume(),
         FRotator::ZeroRotator
     );
+    return SpawnedActor;
 }

@@ -1,6 +1,7 @@
 ﻿#include "JupiterGameState.h"
 #include "Kismet/GameplayStatics.h"
 #include "SpawnVolume.h"
+#include "JupiterGameInstance.h"
 #include "CoinItem.h"
 
 AJupiterGameState::AJupiterGameState()
@@ -28,12 +29,26 @@ int32 AJupiterGameState::GetScore() const
 
 void AJupiterGameState::AddScore(int32 Amount)
 {
-	Score += Amount;
-	UE_LOG(LogTemp, Warning, TEXT("Score: %d"), Score);
+	if (UGameInstance* GameInstance = GetGameInstance())
+	{
+		UJupiterGameInstance* JupiterGameInstance = Cast<UJupiterGameInstance>(GameInstance);
+		if (JupiterGameInstance)
+		{
+			JupiterGameInstance->AddToScore(Amount);
+		}
+	}
 }
 
 void AJupiterGameState::StartLevel()
 {
+	if (UGameInstance* GameInstance = GetGameInstance())
+	{
+		UJupiterGameInstance* JupiterGameInstance = Cast<UJupiterGameInstance>(GameInstance);
+		if (JupiterGameInstance)
+		{
+			CurrentLevelIndex = JupiterGameInstance->CurrentLevelIndex;
+		}
+	}
 	// 레벨 시작 시, 코인 개수 초기화
 	SpawnedCoinCount = 0;
 	CollectedCoinCount = 0;
@@ -46,7 +61,7 @@ void AJupiterGameState::StartLevel()
 
 	for (int32 i = 0; i < ItemToSpawn; i++)
 	{
-		if (FoundVolume.Num() > 0)
+		if (FoundVolumes.Num() > 0)
 		{
 			ASpawnVolume* SpawnVolume = Cast<ASpawnVolume>(FoundVolumes[0]);
 			if (SpawnVolume)
@@ -87,7 +102,7 @@ void AJupiterGameState::OnCoinCollected()
 
 	UE_LOG(LogTemp, Warning, TEXT("Coin Collected: %d / %d"),
 		CollectedCoinCount,
-		SpawnedCoinCount)
+		SpawnedCoinCount);
 
 		// 현재 레벨에서 스폰된 코인을 전부 주웠다면 즉시 레벨 종료
 		if (SpawnedCoinCount > 0 && CollectedCoinCount >= SpawnedCoinCount)
@@ -103,6 +118,16 @@ void AJupiterGameState::EndLevel()
 	// 다음 레벨 인덱스로
 	CurrentLevelIndex++;
 
+	if (UGameInstance* GameInstance = GetGameInstance())
+	{
+		UJupiterGameInstance* JupiterGameInstance = Cast<UJupiterGameInstance>(GameInstance);
+		if (JupiterGameInstance)
+		{
+			AddScore(Score); // 레벨 종료 시, 수집한 코인 수만큼 점수 추가
+			JupiterGameInstance->CurrentLevelIndex = CurrentLevelIndex;
+		}
+	}
+
 	// 모든 레벨을 다 돌았다면 게임 오버 처리
 	if (CurrentLevelIndex >= MaxLevels)
 	{
@@ -113,7 +138,7 @@ void AJupiterGameState::EndLevel()
 	// 레벨 맵 이름이 있다면 해당 맵 불러오기
 	if (LevelMapNames.IsValidIndex(CurrentLevelIndex))
 	{
-		UGamePlayStatics::OpenLevel(GetWorld(), LevelMapNames[CurrentLevelIndex]);
+		UGameplayStatics::OpenLevel(GetWorld(), LevelMapNames[CurrentLevelIndex]);
 	}
 	else
 	{

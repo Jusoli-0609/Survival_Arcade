@@ -14,7 +14,7 @@ public:
 
 	virtual void BeginPlay() override;
 
-	UPROPERTY(VisibleAnyWhere, BlueprintReadWrite, Category = "Score")
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Score")
 	int32 Score;
 	// 현재 레벨에서 스폰된 코인 개수
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Coin")
