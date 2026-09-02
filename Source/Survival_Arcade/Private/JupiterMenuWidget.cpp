@@ -132,7 +132,7 @@ void UJupiterMenuWidget::BuildDefaultLayout()
 
 	StartButton = CreateStyledButton(
 		TEXT("StartButton"),
-		TEXT("게임 시작")
+		TEXT("START GAME")
 	);
 	UVerticalBoxSlot* StartSlot =
 		MenuColumn->AddChildToVerticalBox(StartButton);
@@ -140,7 +140,7 @@ void UJupiterMenuWidget::BuildDefaultLayout()
 
 	RestartButton = CreateStyledButton(
 		TEXT("RestartButton"),
-		TEXT("다시 시작")
+		TEXT("RESTART")
 	);
 	UVerticalBoxSlot* RestartSlot =
 		MenuColumn->AddChildToVerticalBox(RestartButton);
@@ -148,7 +148,7 @@ void UJupiterMenuWidget::BuildDefaultLayout()
 
 	MainMenuButton = CreateStyledButton(
 		TEXT("MainMenuButton"),
-		TEXT("메인 메뉴")
+		TEXT("MAIN MENU")
 	);
 	UVerticalBoxSlot* MainMenuSlot =
 		MenuColumn->AddChildToVerticalBox(MainMenuButton);
@@ -156,7 +156,7 @@ void UJupiterMenuWidget::BuildDefaultLayout()
 
 	QuitButton = CreateStyledButton(
 		TEXT("QuitButton"),
-		TEXT("게임 종료")
+		TEXT("QUIT GAME")
 	);
 	MenuColumn->AddChildToVerticalBox(QuitButton);
 }
@@ -262,8 +262,8 @@ void UJupiterMenuWidget::RefreshMenu()
 		SubtitleText->SetText(
 			FText::FromString(
 				bIsMainMenu
-					? TEXT("웨이브를 돌파하고 최고 점수에 도전하세요.")
-					: TEXT("다시 도전하거나 메인 메뉴로 돌아갈 수 있습니다.")
+					? TEXT("Clear every wave and chase the high score.")
+					: TEXT("Try again or return to the main menu.")
 			)
 		);
 	}

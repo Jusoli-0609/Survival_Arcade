@@ -11,6 +11,7 @@
 #include "Components/TextBlock.h"
 #include "Components/VerticalBox.h"
 #include "Components/VerticalBoxSlot.h"
+#include "Engine/World.h"
 #include "JupiterCharacter.h"
 #include "JupiterGameState.h"
 #include "TimerManager.h"

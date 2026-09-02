@@ -2,6 +2,7 @@
 #include "JupiterPlayerController.h"
 #include "JupiterGameState.h"
 #include "EnhancedInputComponent.h"
+#include "Engine/World.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
