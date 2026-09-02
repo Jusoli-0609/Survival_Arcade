@@ -1,5 +1,6 @@
-﻿#include "JupiterCharacter.h"
+#include "JupiterCharacter.h"
 #include "JupiterPlayerController.h"
+#include "JupiterGameState.h"
 #include "EnhancedInputComponent.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
@@ -181,14 +182,34 @@ void AJupiterCharacter::StopSprint(const FInputActionValue& value)
 // 체력 회복 함수
 void AJupiterCharacter::AddHealth(float Amount)
 {
-	// 체력을 회복시킴. 최대 체력을 초과하지 않도록 제한함
+	if (bIsDead)
+	{
+		return;
+	}
+
+	const float PreviousHealth = Health;
 	Health = FMath::Clamp(Health + Amount, 0.0f, MaxHealth);
-	UE_LOG(LogTemp, Log, TEXT("Health increased to: %f"), Health);
+
+	if (!FMath::IsNearlyEqual(PreviousHealth, Health))
+	{
+		OnHealthChanged.Broadcast(Health, MaxHealth);
+		UE_LOG(LogTemp, Log, TEXT("Health increased to: %f"), Health);
+	}
 }
 
-int AJupiterCharacter::GetHealth() const
+float AJupiterCharacter::GetHealth() const
 {
 	return Health;
+}
+
+float AJupiterCharacter::GetMaxHealth() const
+{
+	return MaxHealth;
+}
+
+float AJupiterCharacter::GetHealthPercent() const
+{
+	return MaxHealth > 0.0f ? Health / MaxHealth : 0.0f;
 }
 
 // 데미지 처리 함수
@@ -198,27 +219,40 @@ float AJupiterCharacter::TakeDamage(
 	AController* EventInstigator, 
 	AActor* DamageCauser)
 {
-	// 기본 데미지 처리 로직 호출 (필수는 아님)
-	float ActualDamage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+	if (bIsDead)
+	{
+		return 0.0f;
+	}
 
-	// 체력을 데미지만큼 감소시키고, 0 이하로 떨어지지 않도록 Clamp
-	Health = FMath::Clamp(Health - DamageAmount, 0.0f, MaxHealth);
+	const float ActualDamage =
+		Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+
+	Health = FMath::Clamp(Health - ActualDamage, 0.0f, MaxHealth);
+	OnHealthChanged.Broadcast(Health, MaxHealth);
 	UE_LOG(LogTemp, Warning, TEXT("Health decreased to: %f"), Health);
 
-	// 체력이 0 이하가 되면 사망 처리
 	if (Health <= 0.0f)
 	{
 		OnDeath();
 	}
 
-	// 실제 적용된 데미지를 반환
 	return ActualDamage;
 }
 
 // 사망 처리 함수
 void AJupiterCharacter::OnDeath()
 {
+	if (bIsDead)
+	{
+		return;
+	}
+
+	bIsDead = true;
 	UE_LOG(LogTemp, Error, TEXT("Character is Dead!"));
 
-	// 사망 후 로직
+	if (AJupiterGameState* JupiterGameState =
+		GetWorld() ? GetWorld()->GetGameState<AJupiterGameState>() : nullptr)
+	{
+		JupiterGameState->OnGameOver();
+	}
 }

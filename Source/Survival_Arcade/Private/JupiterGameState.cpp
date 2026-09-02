@@ -2,6 +2,7 @@
 #include "CoinItem.h"
 #include "Engine/Engine.h"
 #include "JupiterGameInstance.h"
+#include "JupiterPlayerController.h"
 #include "Kismet/GameplayStatics.h"
 #include "SpawnVolume.h"
 
@@ -75,6 +76,34 @@ void AJupiterGameState::AddScore(int32 Amount)
 	{
 		JupiterGameInstance->AddToScore(Amount);
 	}
+}
+
+float AJupiterGameState::GetRemainingWaveTime() const
+{
+	if (!bWaveActive)
+	{
+		return 0.0f;
+	}
+
+	return FMath::Max(
+		GetWorldTimerManager().GetTimerRemaining(WaveTimerHandle),
+		0.0f
+	);
+}
+
+int32 AJupiterGameState::GetCurrentLevelNumber() const
+{
+	return CurrentLevelIndex + 1;
+}
+
+int32 AJupiterGameState::GetTotalLevelCount() const
+{
+	return LevelMapNames.Num();
+}
+
+int32 AJupiterGameState::GetCurrentWaveNumber() const
+{
+	return CurrentWaveIndex + 1;
 }
 
 void AJupiterGameState::StartLevel()
@@ -313,5 +342,16 @@ void AJupiterGameState::EndLevel()
 
 void AJupiterGameState::OnGameOver()
 {
+	GetWorldTimerManager().ClearTimer(WaveTimerHandle);
+	bWaveActive = false;
+
 	UE_LOG(LogTemp, Warning, TEXT("Game Over!!"));
+
+	if (AJupiterPlayerController* PlayerController =
+		Cast<AJupiterPlayerController>(
+			UGameplayStatics::GetPlayerController(this, 0)
+		))
+	{
+		PlayerController->ShowGameOverMenu();
+	}
 }

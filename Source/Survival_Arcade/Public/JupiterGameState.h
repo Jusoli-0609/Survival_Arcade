@@ -75,6 +75,18 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Score")
 	void AddScore(int32 Amount);
 
+	UFUNCTION(BlueprintPure, Category = "UI")
+	float GetRemainingWaveTime() const;
+
+	UFUNCTION(BlueprintPure, Category = "UI")
+	int32 GetCurrentLevelNumber() const;
+
+	UFUNCTION(BlueprintPure, Category = "UI")
+	int32 GetTotalLevelCount() const;
+
+	UFUNCTION(BlueprintPure, Category = "UI")
+	int32 GetCurrentWaveNumber() const;
+
 	UFUNCTION(BlueprintCallable, Category = "Level")
 	void OnGameOver();
 

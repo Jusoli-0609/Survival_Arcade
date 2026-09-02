@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
@@ -7,6 +7,14 @@
 class USpringArmComponent;
 class UCameraComponent;
 struct FInputActionValue;
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(
+	FOnHealthChangedSignature,
+	float,
+	CurrentHealth,
+	float,
+	MaxHealth
+);
 // 미리 선언. 이 클래스를 가진 헤더 파일 전체를 include 하는 건 비효율적이다.
 // 따라서 여기서는 이런식으로 언급만 하는 미리 선언을 이용한다.
 // 구현부에 가서 include "GameFramework/SpringArmComponent.h" 과
@@ -30,12 +38,22 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
 	UCameraComponent* CameraComp;
 
-	// 현재 체력을 가져오는 함수
+	// HUD와 블루프린트에서 사용하는 체력 정보
 	UFUNCTION(BlueprintPure, Category = "Health")
-	int32 GetHealth() const;
+	float GetHealth() const;
+
+	UFUNCTION(BlueprintPure, Category = "Health")
+	float GetMaxHealth() const;
+
+	UFUNCTION(BlueprintPure, Category = "Health")
+	float GetHealthPercent() const;
+
 	// 체력을 회복시키는 함수
 	UFUNCTION(BlueprintCallable, Category = "Health")
 	void AddHealth(float Amount);
+
+	UPROPERTY(BlueprintAssignable, Category = "Health")
+	FOnHealthChangedSignature OnHealthChanged;
 
 protected:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
@@ -62,6 +80,10 @@ protected:
 	// 현재 체력
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Health")
 	float Health;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Health")
+	bool bIsDead = false;
+
 	// 사망 처리 함수 (체력이 0 이하가 되었을 때 호출)
 	UFUNCTION(BlueprintCallable, Category = "Health")
 	virtual void OnDeath();
