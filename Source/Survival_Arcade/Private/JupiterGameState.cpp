@@ -1,23 +1,59 @@
-﻿#include "JupiterGameState.h"
+#include "JupiterGameState.h"
+#include "CoinItem.h"
+#include "Engine/Engine.h"
+#include "JupiterGameInstance.h"
 #include "Kismet/GameplayStatics.h"
 #include "SpawnVolume.h"
-#include "JupiterGameInstance.h"
-#include "CoinItem.h"
 
 AJupiterGameState::AJupiterGameState()
 {
 	SpawnedCoinCount = 0;
 	CollectedCoinCount = 0;
-	LevelDuration = 30.0f; // 한 레벨당 30초
 	CurrentLevelIndex = 0;
-	MaxLevels = 3;
+	CurrentWaveIndex = 0;
+	CurrentWaveDuration = 0.0f;
+	CurrentWaveItemCount = 0;
+	MaxWavesPerLevel = 3;
+	bWaveActive = false;
+
+	LevelMapNames =
+	{
+		FName(TEXT("BasicLevel")),
+		FName(TEXT("IntermediateLevel")),
+		FName(TEXT("AdvancedLevel"))
+	};
+
+	const auto AddWave = [this](
+		int32 LevelIndex,
+		int32 WaveNumber,
+		float WaveDuration,
+		int32 ItemSpawnCount)
+	{
+		FJupiterWaveData WaveData;
+		WaveData.LevelIndex = LevelIndex;
+		WaveData.WaveNumber = WaveNumber;
+		WaveData.WaveDuration = WaveDuration;
+		WaveData.ItemSpawnCount = ItemSpawnCount;
+		WaveSettings.Add(WaveData);
+	};
+
+	AddWave(0, 1, 30.0f, 20);
+	AddWave(0, 2, 25.0f, 25);
+	AddWave(0, 3, 20.0f, 30);
+
+	AddWave(1, 1, 30.0f, 25);
+	AddWave(1, 2, 25.0f, 30);
+	AddWave(1, 3, 20.0f, 35);
+
+	AddWave(2, 1, 30.0f, 30);
+	AddWave(2, 2, 25.0f, 35);
+	AddWave(2, 3, 20.0f, 40);
 }
 
 void AJupiterGameState::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// 게임 시작 시 첫 레벨부터 진행
 	StartLevel();
 }
 
@@ -34,119 +70,243 @@ int32 AJupiterGameState::GetScore() const
 
 void AJupiterGameState::AddScore(int32 Amount)
 {
-	if (UGameInstance* GameInstance = GetGameInstance())
+	if (UJupiterGameInstance* JupiterGameInstance =
+		Cast<UJupiterGameInstance>(GetGameInstance()))
 	{
-		UJupiterGameInstance* JupiterGameInstance = Cast<UJupiterGameInstance>(GameInstance);
-		if (JupiterGameInstance)
-		{
-			JupiterGameInstance->AddToScore(Amount);
-		}
+		JupiterGameInstance->AddToScore(Amount);
 	}
 }
 
 void AJupiterGameState::StartLevel()
 {
-	if (UGameInstance* GameInstance = GetGameInstance())
+	GetWorldTimerManager().ClearTimer(WaveTimerHandle);
+	bWaveActive = false;
+	CleanupWaveItems();
+
+	if (UJupiterGameInstance* JupiterGameInstance =
+		Cast<UJupiterGameInstance>(GetGameInstance()))
 	{
-		UJupiterGameInstance* JupiterGameInstance = Cast<UJupiterGameInstance>(GameInstance);
-		if (JupiterGameInstance)
+		CurrentLevelIndex = JupiterGameInstance->CurrentLevelIndex;
+	}
+
+	CurrentWaveIndex = 0;
+	StartWave();
+}
+
+const FJupiterWaveData* AJupiterGameState::FindCurrentWaveData() const
+{
+	for (const FJupiterWaveData& WaveData : WaveSettings)
+	{
+		const bool bSameLevel =
+			WaveData.LevelIndex == CurrentLevelIndex;
+		const bool bSameWave =
+			WaveData.WaveNumber == CurrentWaveIndex + 1;
+
+		if (bSameLevel && bSameWave)
 		{
-			CurrentLevelIndex = JupiterGameInstance->CurrentLevelIndex;
+			return &WaveData;
 		}
 	}
-	// 레벨 시작 시, 코인 개수 초기화
+
+	return nullptr;
+}
+
+void AJupiterGameState::StartWave()
+{
+	const FJupiterWaveData* WaveData = FindCurrentWaveData();
+
+	if (!WaveData)
+	{
+		bWaveActive = false;
+
+		UE_LOG(
+			LogTemp,
+			Error,
+			TEXT("Level %d, Wave %d 설정을 찾지 못했습니다."),
+			CurrentLevelIndex + 1,
+			CurrentWaveIndex + 1
+		);
+
+		return;
+	}
+
+	CurrentWaveDuration = FMath::Max(WaveData->WaveDuration, 0.1f);
+	CurrentWaveItemCount = FMath::Max(WaveData->ItemSpawnCount, 0);
+
 	SpawnedCoinCount = 0;
 	CollectedCoinCount = 0;
+	SpawnedWaveItems.Empty();
 
-	// 현재 맵에 배치된 모든 SpawnVolume을 찾아 아이템 40개를 스폰
 	TArray<AActor*> FoundVolumes;
-	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ASpawnVolume::StaticClass(), FoundVolumes);
+	UGameplayStatics::GetAllActorsOfClass(
+		GetWorld(),
+		ASpawnVolume::StaticClass(),
+		FoundVolumes
+	);
 
-	const int32 ItemToSpawn = 40;
-
-	for (int32 i = 0; i < ItemToSpawn; i++)
+	if (FoundVolumes.IsEmpty())
 	{
-		if (FoundVolumes.Num() > 0)
+		bWaveActive = false;
+		UE_LOG(LogTemp, Error, TEXT("SpawnVolume을 찾지 못했습니다."));
+		return;
+	}
+
+	for (int32 i = 0; i < CurrentWaveItemCount; i++)
+	{
+		const int32 VolumeIndex = i % FoundVolumes.Num();
+		ASpawnVolume* SpawnVolume =
+			Cast<ASpawnVolume>(FoundVolumes[VolumeIndex]);
+
+		if (!SpawnVolume)
 		{
-			ASpawnVolume* SpawnVolume = Cast<ASpawnVolume>(FoundVolumes[0]);
-			if (SpawnVolume)
-			{
-				AActor* SpawnedActor = SpawnVolume->SpawnRandomItem();
-				// 만약 스폰된 액터가 코인 타입이라면 SpawnedCoinCount 증가
-				if (SpawnedActor && SpawnedActor->IsA(ACoinItem::StaticClass()))
-				{
-					SpawnedCoinCount++;
-				}
-			}
+			continue;
+		}
+
+		AActor* SpawnedActor = SpawnVolume->SpawnRandomItem();
+
+		if (!SpawnedActor)
+		{
+			continue;
+		}
+
+		SpawnedWaveItems.Add(SpawnedActor);
+
+		if (SpawnedActor->IsA(ACoinItem::StaticClass()))
+		{
+			SpawnedCoinCount++;
 		}
 	}
 
-	// 30초 후에 OnLevelTimeUp()가 호출되도록 타이머 설정
+	bWaveActive = true;
+
 	GetWorldTimerManager().SetTimer(
-		LevelTimerHandle,
+		WaveTimerHandle,
 		this,
-		&AJupiterGameState::OnLevelTimeUp,
-		LevelDuration,
+		&AJupiterGameState::OnWaveTimeUp,
+		CurrentWaveDuration,
 		false
 	);
 
-	UE_LOG(LogTemp, Warning, TEXT("Level %d Start!, Spawned %d coin"),
+	UE_LOG(
+		LogTemp,
+		Warning,
+		TEXT("Level %d - Wave %d Start! Duration: %.1f, Items: %d, Coins: %d"),
 		CurrentLevelIndex + 1,
-		SpawnedCoinCount);
+		CurrentWaveIndex + 1,
+		CurrentWaveDuration,
+		CurrentWaveItemCount,
+		SpawnedCoinCount
+	);
+
+	if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(
+			-1,
+			2.0f,
+			FColor::Yellow,
+			FString::Printf(
+				TEXT("Level %d - Wave %d 시작!"),
+				CurrentLevelIndex + 1,
+				CurrentWaveIndex + 1
+			)
+		);
+	}
 }
 
-void AJupiterGameState::OnLevelTimeUp()
+void AJupiterGameState::OnWaveTimeUp()
 {
-	// 시간이 다 되면 레벨을 종료
-	EndLevel();
+	EndWave();
+}
+
+void AJupiterGameState::EndWave()
+{
+	if (!bWaveActive)
+	{
+		return;
+	}
+
+	bWaveActive = false;
+	GetWorldTimerManager().ClearTimer(WaveTimerHandle);
+	CleanupWaveItems();
+
+	CurrentWaveIndex++;
+
+	if (CurrentWaveIndex < MaxWavesPerLevel)
+	{
+		StartWave();
+	}
+	else
+	{
+		EndLevel();
+	}
+}
+
+void AJupiterGameState::CleanupWaveItems()
+{
+	for (TWeakObjectPtr<AActor>& Item : SpawnedWaveItems)
+	{
+		if (AActor* ItemActor = Item.Get())
+		{
+			ItemActor->Destroy();
+		}
+	}
+
+	SpawnedWaveItems.Empty();
 }
 
 void AJupiterGameState::OnCoinCollected()
 {
+	if (!bWaveActive)
+	{
+		return;
+	}
+
 	CollectedCoinCount++;
 
-	UE_LOG(LogTemp, Warning, TEXT("Coin Collected: %d / %d"),
+	UE_LOG(
+		LogTemp,
+		Warning,
+		TEXT("Coin Collected: %d / %d"),
 		CollectedCoinCount,
-		SpawnedCoinCount);
+		SpawnedCoinCount
+	);
 
-		// 현재 레벨에서 스폰된 코인을 전부 주웠다면 즉시 레벨 종료
-		if (SpawnedCoinCount > 0 && CollectedCoinCount >= SpawnedCoinCount)
-		{
-			EndLevel();
-		}
+	if (SpawnedCoinCount > 0 &&
+		CollectedCoinCount >= SpawnedCoinCount)
+	{
+		EndWave();
+	}
 }
 
 void AJupiterGameState::EndLevel()
 {
-	// 타이머 해제
-	GetWorldTimerManager().ClearTimer(LevelTimerHandle);
-	// 다음 레벨 인덱스로
+	GetWorldTimerManager().ClearTimer(WaveTimerHandle);
+	bWaveActive = false;
+	CleanupWaveItems();
+
 	CurrentLevelIndex++;
 
-	if (UGameInstance* GameInstance = GetGameInstance())
+	if (UJupiterGameInstance* JupiterGameInstance =
+		Cast<UJupiterGameInstance>(GetGameInstance()))
 	{
-		UJupiterGameInstance* JupiterGameInstance = Cast<UJupiterGameInstance>(GameInstance);
-		if (JupiterGameInstance)
-		{
-			JupiterGameInstance->CurrentLevelIndex = CurrentLevelIndex;
-		}
+		JupiterGameInstance->CurrentLevelIndex = CurrentLevelIndex;
 	}
 
-	// 모든 레벨을 다 돌았다면 게임 오버 처리
-	if (CurrentLevelIndex >= MaxLevels)
+	if (CurrentLevelIndex >= LevelMapNames.Num())
 	{
 		OnGameOver();
 		return;
 	}
 
-	// 레벨 맵 이름이 있다면 해당 맵 불러오기
 	if (LevelMapNames.IsValidIndex(CurrentLevelIndex))
 	{
-		UGameplayStatics::OpenLevel(GetWorld(), LevelMapNames[CurrentLevelIndex]);
+		UGameplayStatics::OpenLevel(
+			GetWorld(),
+			LevelMapNames[CurrentLevelIndex]
+		);
 	}
 	else
 	{
-		// 맵 이름이 없으면 게임오버
 		OnGameOver();
 	}
 }
@@ -154,5 +314,4 @@ void AJupiterGameState::EndLevel()
 void AJupiterGameState::OnGameOver()
 {
 	UE_LOG(LogTemp, Warning, TEXT("Game Over!!"));
-	// 여기서 UI를 띄운다거나, 재시작 기능을 넣을 수도 있음
 }
