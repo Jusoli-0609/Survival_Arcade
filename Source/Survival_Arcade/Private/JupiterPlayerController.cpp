@@ -1,5 +1,6 @@
 ﻿#include "JupiterPlayerController.h"
 #include "EnhancedInputSubsystems.h"
+#include "Blueprint/UserWidget.h" // 헤더 추가
 
 AJupiterPlayerController::AJupiterPlayerController()
     : InputMappingContext(nullptr), 
@@ -31,6 +32,15 @@ void AJupiterPlayerController::BeginPlay()
             // InputMappingContext <-이게 존재하면 AddMappingContext라는 함수로
             // InputMappingContext 이거를 활성화 시켜 주세요.
             // 0은 가장 높은 우선순위를 의미함.(다른 IMC와 겹치는 경우 체크함)
+        }
+    }
+
+    if (HUDWidgetClass)
+    {
+        UUserWidget* HUDWidget = CreateWidget<UUserWidget>(this, HUDWidgetClass);
+        if (HUDWidget)
+        {
+            HUDWidget->AddToViewport();
         }
     }
 }

@@ -31,6 +31,11 @@ public:
 	UInputAction* SprintAction;
 	// IA_Sprint
 
+	  // UMG 위젯 클래스를 에디터에서 할당받을 변수
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	TSubclassOf<UUserWidget> HUDWidgetClass;
+
+
 protected:
 	virtual void BeginPlay() override;
 	// IMC 활성화 함수
